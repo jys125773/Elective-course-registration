@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<link rel="stylesheet" href="./public/css/bootstrap.min.css">
+	<script type="text/javascript" src="./public/js/jquery-1.12.3.min.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function($) {
+		$("#user_login").click(function(){
+			$.post('/login', 
+				{	
+					id: $("#user_id").val(),
+					psw:$("#user_psw").val()
+				}, 
+				function(data) {
+					var s = data.result;
+					if (s == 1) {
+						window.location = "/admin";
+					}else if(s==2){
+						window.location.reload();
+					} else if(s == 0){
+						$("#tip").html("服务器故障，请稍后再试。").slideDown(100);
+					}else if (s == -1) {
+						$("#tip").html("用户名不存在，请检查。").slideDown(100);
+					} else if(s == -2){
+						$("#tip").html("密码错误，请检查。").slideDown(100);
+					};
+			});
+			$("input").focus(function() {
+				$("#tip").html("").slideUp(100);
+			});
+			return false;
+		});
+	});
+	</script>
+</head>
+<body>
+	<div class="jumbotron">
+		<div class="container">
+			<!-- <h1 style="padding-bottom:200px;">海淀中学选修课报名系统</h1>
+		-->
+		<h1>海淀中学选修课报名系统</h1>
+		<form class="form-horizontal col-lg-6" role="form">
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">学号：</label>
+				<div class="col-sm-10">
+					<input type="id" class="form-control" id="user_id">
+					<small>请输入你的学号，如果你是管理员请输入你的账号。</small>
+				</div>
+
+			</div>
+			<div class="form-group">
+				<label  class="col-sm-2 control-label">密码：</label>
+				<div class="col-sm-10">
+					<input type="password" class="form-control" id="user_psw">
+					<small>如果忘记密码请联系班主任。</small>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-10">
+					<div class="alert alert-danger" role="alert" id="tip" style="display:none;"></div>
+					<button type="submit" class="btn btn-success" id="user_login">登陆</button>
+				</div>
+			</div>
+		</form>
+
+	</div>
+</div>
+</body>
+</html>

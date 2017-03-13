@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理员面板</title>
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/public/css/dashboard.css" rel="stylesheet">
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/public/css/dashboard.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/jquery-ui.css"/>
+    <link rel="stylesheet" href="/public/css/pqgrid.min.css"/>
+    <link rel="stylesheet" href="/public/themes/office/pqgrid.css"/>
+    <script type="text/javascript" src="/public/js/jquery-1.12.3.min.js"></script>
+    <script type="text/javascript" src="/public/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/public/js/underscore-min.js"></script>
+    <script src="/public/js/jquery-ui.min.js"></script>
+    <script src="/public/js/pqgrid.min.js"></script>
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        $("#courseSave").click(function(){
+             var str = "";
+            $("#limit-grade input:checked").each(function() {
+                 str += $(this).val();
+            });
+            $.post('/admin-addcourse',
+             {
+                 order: $("#course-order").val(),//课程序号
+                 name:$("#course-name").val(),//课程名称
+                 teacher:$("#teacher-name").val(),
+                 week:$("#course-week input[name=inlineRadioOptions]:checked").val(),//星期
+                 maxcount:$("#limit-count").val(),//限人数
+                 intro:$("#couse-intro").val(),//简介
+                 grade:str,
+             }, 
+             function(data) {
+                if (data.result == 1) {
+                    $("#myModal").modal("hide");
+                     window.location.reload();
+                } else{
+                    alert("sorry，添加失败，请重试。");
+                };
+            });
+        });
+        refresh();
+        function refresh(){
+           $.get('/admin-getallCourse', function(data) {
+               var dataobj = data.result;
+               $("#grid").pqGrid({
+                    width: 1000,
+                    height: 460,
+                    title: "全部课程一览表",
+                    resizable: false,
+                    draggable: false,
+                    dataModel: {
+                        data: dataobj  //填充数据
+                    },
+                    selectionModel: { type: 'none', subtype:'incr', cbHeader:true, cbAll:true},
+                    colModel: [
+                        {title: "_id", width: 90, dataType: "string", dataIndx: "_id",editable:false},
+                        {title: "编号", width: 40, dataType: "integer", dataIndx: "order"},
+                        {title: "课程名称", width: 100, dataType: "string", dataIndx: "name"},
+                        {title: "星期", width: 60, dataType: "string", dataIndx: "week"},
+                        {title: "允许数量", width: 100, dataType: "integer", dataIndx: "maxcount"},
+                        {title: "允许年级", width: 100, dataType: "Array", dataIndx: "grade"},
+                        {title: "老师", width: 100, dataType: "string", dataIndx: "teacher"},
+                        {title: "简介", width: 300, dataType: "string", dataIndx: "intro", editor: {type:'textarea', attr:'rows=8'} , sortable: false},
+                        { title: "", dataIndx: "state", width: 30, minWidth:30, align: "center", type:'checkBoxSelection', cls: 'ui-state-default', resizable: false, sortable:false }
+                    ],
+                    //用户编辑单元格结束之后做的事情
+                    cellSave: function (event, ui) {
+                        // ui.rowData能够拿到这一行的全部数据，甭废话，直接扔给服务器持久化！
+                        console.log(ui.rowData)
+                        $.post("/admin-renewTable", ui.rowData, function (data) {
+
+                        });
+                    }
+                });
+           });
+        };
+        var flag = false;
+        $("#delete-btn").click(function(){
+            flag  = true;
+            //除以2，这是因为paramquery这个框架有点小问题，会重复算tr两次
+           var amount = $("tr.pq-row-select").length / 2;
+           if (amount!=0) {
+            $("#delete-confirm").html("真的要删除你所选择的"+amount+"条数据么？");
+           } else{
+            $("#delete-confirm").html("请选中删除课程条目。")
+           };
+           $("#delete-confirm-yes").click(function() {
+               if (flag) {
+                flag = false;
+                    $("#delete-modal").modal('hide');
+                   var deleteArr = [];
+                    //遍历，找到要删除的元素的_id，放入数组，集体发给模型，进行集体删除！
+                    $("tr.pq-row-select").each(function(){
+                        deleteArr.push($(this).find("td[pq-col-indx=0]").html());
+                    });
+                    deleteArr = _.unique(deleteArr);
+                    $.post('/admin-deleteCourse', 
+                        {"deletes":JSON.stringify(deleteArr)}, 
+                        function(data) {
+                            if(data.result == 1){
+                               window.location.reload();
+                            };
+                    });
+               };
+           });
+        });
+    });
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">选修课报名系统管理员面板</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="#">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-3 col-md-2 sidebar">
+                <ul class="nav nav-sidebar">
+                    <li>
+                        <a href="/admin/">管理面板首页</a>
+                    </li>
+                    <li>
+                        <a href="/admin-student">学生管理</a>
+                    </li>
+                    <li class="active">
+                        <a href="/admin-course">课程管理</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h1 class="page-header">
+                    <p class="col-sm-9">课程管理</p>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">添加课程</button>
+                    <button type="button" id="delete-btn" class="btn btn-danger" data-toggle="modal" data-target=".bs-example-modal-lg">删除所选</button>
+                </h1>
+                <div id="delete-modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <h2 id="delete-confirm" class="text-center"></h2>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                                    <button id="delete-confirm-yes" type="button" class="btn btn-primary">确认</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <!-- Modal -->
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">
+                                    <span aria-hidden="true">&times;</span>
+                                    <span class="sr-only">关闭</span>
+                                </button>
+                                <h4 class="modal-title" id="myModalLabel">课程信息</h4>
+                            </div>
+                            <div class="modal-body">
+                                <form class="form-horizontal" role="form">
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">课程序号</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control" type="text" id="course-order"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">课程名称</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control" type="text" id="course-name"></div>
+                                    </div>
+                                    <div class="form-group" id="course-week">
+                                        <label class="col-sm-2 control-label">上课星期</label>
+                                        <div class="col-sm-10">
+                                            <label class="radio-inline">
+                                                <input type="radio" name="inlineRadioOptions" id="inlineRadio1" value="1">周一</label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="inlineRadioOptions" id="inlineRadio2" value="2">周二</label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="inlineRadioOptions" id="inlineRadio3" value="3">周三</label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="inlineRadioOptions" id="inlineRadio4" value="4">周四</label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="inlineRadioOptions" id="inlineRadio5" value="5">周五</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">限报人数</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control" type="text" id="limit-count"></div>
+                                    </div>
+                                    <div class="form-group" id="limit-grade">
+                                        <label class="col-sm-2 control-label">限报年级</label>
+                                        <div class="col-sm-10">
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox1" value="1">初一</label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox2" value="2">初二</label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox3" value="3">初三</label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox4" value="4">高一</label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox5" value="5">高二</label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="inlineCheckbox6" value="6">高三</label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">教师名字</label>
+                                        <div class="col-sm-10">
+                                            <input class="form-control" type="text" id="teacher-name"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label">课程简介</label>
+                                        <div class="col-sm-10">
+                                            <textarea class="form-control" rows="5" id="couse-intro"></textarea>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" id="courseSave">保存</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <section class="table">
+                    <div id="grid" style="margin-top:20px;"></div>
+                </section>
+            </div>
+        </div>
+
+</body>
+    </html>

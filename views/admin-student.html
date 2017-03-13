@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>管理员面板</title>
+    <link href="/public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/public/css/dashboard.css" rel="stylesheet">
+    <style type="text/css">
+        .tab-pane{
+            padding-top:20px;
+        }
+    </style>
+    <script type="text/javascript" src="/public/js/jquery-1.12.3.min.js"></script>
+    <script type="text/javascript" src="/public/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+   jQuery(document).ready(function($) {//jquery上传文件
+        $("#fileUpload").click(function(){
+            var formData = new FormData();
+            var name = $("#exampleInputFile").val();
+            if (name=="") {
+                alert("请选择文件");
+                return false;
+            };
+            formData.append("file",$("#exampleInputFile")[0].files[0]);
+            formData.append("name",name);
+             $.ajax({
+                  url: "/admin-postExcel",
+                  type: "POST",
+                  data: formData,
+                  contentType: false, //必须false才会避开jQuery对 formdata 的默认处理 XMLHttpRequest会对 formdata 进行正确的处理 
+                  processData: false, //必须false才会自动加上正确的Content-Type
+                  success: function (data) {
+                    if (data.result != 0) {
+                        $(".alert-tip").hide();
+                        $("#excel-form").hide(0,function(){
+                            $('<div class="alert alert-success pull-left" role="alert"></div>').appendTo('#daoru').html("恭喜，你已经成功导入"+data.result+"个学生数据");
+                        });
+                    } else{
+                        alert("抱歉，由于服务器错误没能导入学生数据，请重试。");
+                    };
+                  }
+            });
+             return false;
+        });
+        $("#resetBtn").click(function(){
+                $("#confirm-reset").click(function(){
+                    console.log(1)
+                    $(".bs-example-modal-lg").modal("hide");
+                    $("#reset-alert").hide();
+                    $("#resetBtn").hide();
+                    $("#download").show();
+                    $("#download").find('a').click(function(){
+                        $(this).remove();
+                    });
+                });
+        });
+        $("#baocun").click(function(){
+            $.post('/admin-changeOnePsw',
+                 {
+                    "sid": $("#xuehao").val(),
+                     "psw":$("#mima").val()
+                 }, 
+                 function(data) {
+                   if (data.result == 1) {
+                    alert("学号为"+$("#xuehao").val()+"的学生密码已经被重置为"+$("#mima").val());
+                   } else{
+                    alert("对不起，修改失败，请重新修改。");
+                   };
+                });
+            return false;
+        });
+   });
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">选修课报名系统管理员面板</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="#">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-3 col-md-2 sidebar">
+                <ul class="nav nav-sidebar">
+                    <li>
+                        <a href="/admin/">管理面板首页</a>
+                    </li>
+                    <li class="active">
+                        <a href="/admin-student">学生管理</a>
+                    </li>
+                    <li>
+                        <a href="/admin-course">课程管理</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+                <h1 class="page-header">学生管理</h1>
+                <div class="bs-example bs-example-tabs">
+                    <ul id="myTab" class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="active">
+                            <a href="#daoru"  role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">导入学生数据</a>
+                        </li>
+                        <li role="presentation" class="">
+                            <a href="#shengcheng" role="tab"   data-toggle="tab" aria-controls="profile" aria-expanded="false">生成学生密码</a>
+                        </li>
+                        <li role="presentation" class="">
+                            <a href="#xiugai" role="tab"  data-toggle="tab" aria-controls="profile" aria-expanded="false">修改学生密码</a>
+                        </li>
+                    </ul>
+                    <div id="myTabContent" class="tab-content">
+                        <div role="tabpanel" class="tab-pane fade active in" id="daoru" aria-labelledby="home-tab">
+                            <div class="col-lg-12">
+                                <div class="alert alert-success pull-left alert-tip" role="alert" >导入Excel表会导致学生数据覆盖，请谨慎操作啊！</div>
+                            </div>
+                            <form role="form" class = "col-lg-12" id="excel-form">
+                                <div class="form-group">
+                                    <input type="file" id="exampleInputFile">
+                                    <p class="help-block">请选择Excel文件，拓展名必须是xlsx文件。</p>
+                                </div>
+                                <button type="submit" class="btn btn-success" id="fileUpload">提交</button>
+                            </form>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="shengcheng" aria-labelledby="profile-tab">
+                            <!--生成学生初始密码-->
+
+                            <div class="alert alert-success pull-left" role="alert" role="alert" id="reset-alert">重置密码之后，之前所有学生密码作废！请一定谨慎操作！</div>
+                            <div class="col-lg-12">
+                                <button type="button" id="resetBtn" class="btn btn-danger" data-toggle="modal" data-target=".bs-example-modal-lg">重置所有学生密码</button>
+
+                                <div id="delete-modal" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <h2 class="modal-title" id="myModalLabel">重置会覆盖之前所有学生的密码，然后生成新密码，你确定么？</h2>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                                                <button type="button" class="btn btn-primary" id="confirm-reset">确认</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-success pull-left" style="display:none;" id="download">
+                                恭喜！密码excel表格已经生成。
+                                <a href="/admin-resetAllStudentPsw" class="btn btn-primary" >下载</a>
+                            </div>
+                        </div>
+                        <div role="tabpanel" class="col-lg-4 tab-pane fade" id="xiugai" aria-labelledby="dropdown1-tab">
+                            <!--修改学生密码-->
+                            <form class="form-horizontal" role="form">
+                                <div class="form-group">
+                                    <label for="inputEmail3" class="col-sm-2 control-label">学号</label>
+                                    <div class="col-sm-10">
+                                        <input id="xuehao" type="text" class="form-control" ></div>
+                                </div>
+                                <div class="form-group">
+                                    <label  for="inputPassword3" class="col-sm-2 control-label">密码</label>
+                                    <div class="col-sm-10">
+                                        <input id="mima" type="password" class="form-control" ></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="col-sm-offset-2 col-sm-10">
+                                        <button id="baocun" type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

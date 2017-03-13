@@ -1,0 +1,23 @@
+{
+  "name": "project_xuanxiukebaomingxitong",
+  "version": "1.0.0",
+  "main": "app.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "ejs": "^2.5.5",
+    "excel-export": "^0.5.1",
+    "express": "^4.14.0",
+    "express-session": "^1.14.2",
+    "formidable": "^1.0.17",
+    "mongodb": "^2.2.19",
+    "mongoose": "^4.7.6",
+    "node-xlsx": "^0.7.4",
+    "underscore": "^1.8.3"
+  }
+}

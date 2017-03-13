@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>选课面板</title>
+    <link rel="stylesheet" href="/public/css/bootstrap.min.css">
+    <style type="text/css">
+    .col-center-block {  
+        float: none;  
+        display: block;  
+        margin-left: auto;  
+        margin-right: auto;  
+    }  
+    </style>
+    <script type="text/javascript" src="/public/js/underscore-min.js"></script>
+    <script type="text/javascript" src="/public/js/jquery-1.12.3.min.js"></script>
+    <script type="text/javascript">
+       jQuery(document).ready(function ($) {
+     var complier = _.template($("#template").html()); //编译函数
+     $.get('/admin-getallCourse', function (allData) { //得到全部课程
+         allData = allData.result;
+         $.get('/student/:' + <%= sid %> , function (data) {
+             //得到学生已经报名的课程
+             var student = data.result;
+             _.each(allData, function (dic) {
+
+                 dic.num = dic.maxcount - dic.students.length; //剩余数量
+
+                 if (_.indexOf(student.course, dic.order) != -1) {
+                     //检查这个课程是否已经被自己报了,
+                     dic.btnclass = "danger";
+                     dic.disabled = "";
+                     dic.btnvalue = "退报";
+                     dic.week = setWeek(dic.week); //星期汉字
+                     dic.grade= setGrade(dic.grade);
+                     var $dom = $(complier(dic)).appendTo("#corses_table");
+                     $dom.find('#regist-btn').click(function () {
+                         var $theBtn = $(this);
+                         unRegist($theBtn);//为按钮的点击绑定退报事件函数
+                     });
+                     return;
+                 };
+                 if (_.indexOf(dic.grade, student._grade) == -1) {
+                     //不在年级许可范围内
+                     dic.btnclass = "default";
+                     dic.disabled = "disabled";
+                     dic.btnvalue = "年级不符合要求";
+                     dic.week = setWeek(dic.week); //星期汉字
+                     dic.grade= setGrade(dic.grade);
+                     $(complier(dic)).appendTo("#corses_table");
+                     return;
+                 };
+
+                 dic.btnclass = "success";
+                 dic.disabled = "";
+                 dic.btnvalue = "报名";
+                 dic.week = setWeek(dic.week); //星期汉字
+                 dic.grade= setGrade(dic.grade);
+                 var $dom = $(complier(dic)).appendTo("#corses_table");
+                 $dom.find('#regist-btn').click(function () {
+                     var $theBtn = $(this);
+                     regist($theBtn);//为按钮的点击绑定报名事件函数
+                 });
+
+                 function regist($theBtn) {
+                     $.get('/student-regist?sid=' + student.sid + '&order=' + dic.order,
+                         function (data) {
+                             var state = data.result;
+                             if (state == 1) {
+                                 $theBtn.val("退报").removeClass('btn-success').addClass('btn-danger').unbind("click").click(function () {
+                                     unRegist($theBtn);
+                                var num_td = $theBtn.parents('td').siblings('.rest-count');
+                                var v = +num_td.html();
+                                num_td.html(v-1);
+                                 });
+                             }else if (state == -5) {
+                                alert("已经报了这个课程。");
+                             }else if (state == -2) {
+                                alert("最多只能报两个课程课程。");
+                             }else if (state == -3) {
+                                alert("所报课程人数已经达到上限。");
+                             }else if (state == -4) {
+                                alert("不在报名年级范围内。");
+                             }else if (state == -1) {
+                                alert("与已报课程日期重复。");
+                             }else if (state == 0) {
+                                alert("服务器错误，请重试。");
+                             };
+                         });
+                 };
+
+                 function unRegist($theBtn) {
+                     $.get('/student-unRegist?sid=' + student.sid + '&order=' + dic.order,
+                         function (data) {
+                             var state = data.result;
+                             if (state == 1) {
+                                 $theBtn.val("报名").removeClass('btn-danger').addClass('btn-success').unbind("click").click(function () {
+                                     regist($theBtn);
+                                var num_td = $theBtn.parents('td').siblings('.rest-count');
+                                var v = +num_td.html();
+                                num_td.html(v+1);
+                                 });
+                             };
+                         });
+                 };
+             });
+         });
+     });
+ });
+       function setWeek(num){
+        var arr = ["日","一","二","三","四","五","六"];
+        return "星期" + arr[num];
+       };
+       function setGrade(arr){
+        var a = ["初一","初二","初三","高一","高二","高三"];
+        var result = [];
+        for(var i = 0 ; i < arr.length ; i++){
+            result.push(a[arr[i]-1]);
+        };
+        return result;
+       };
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">北航附中选课系统</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li class="active">
+                        <a href="#">选课面板</a>
+                    </li>
+                    <li>
+                        <a href="#">我的已报课程</a>
+                    </li>
+                    <li>
+                        <a href="#">修改密码</a>
+                    </li>
+
+                </ul>
+                <form class="navbar-form navbar-left" role="search">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="请输入关键词，筛选课程"></div>
+                </form>
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a>
+                            欢迎！
+                            <%= grade %>
+                            年级，学号
+                            <%= sid %>
+                            的 <b>&nbsp;
+                                <%= name %>&nbsp;</b>
+                            同学，登陆选修课报名系统！
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">退出登录</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <section class="container">
+        <table class="table table-hover table-bordered" >
+            <thead>
+                <tr>
+                    <th class="text-center">课程编号</th>
+                    <th class="text-center">课程名字</th>
+                    <th class="text-center">上课星期</th>
+                    <th class="text-center">剩余数量</th>
+                    <th class="text-center">可报年级</th>
+                    <th class="text-center">课程教师</th>
+                    <th class="text-center">课程简介</th>
+                    <th class="text-center">报名按钮</th>
+                </tr>
+            </thead>
+            <tbody id="corses_table">
+                
+            </tbody>
+        </table>
+    </section>
+     <script type="text/template" id="template">
+            <tr>
+                <td class="text-center">{%= order %}</td>
+                <td>{%= name %}</td>
+                <td class="text-center">{%= week %}</td>
+                <td class="text-center rest-count">{%= num %}</td>
+                <td>{%= grade %}</td>
+                <td>{%= teacher %}</td>
+                <td class="col-lg-3">{%= intro %}</td>
+                <td>
+                    <input id="regist-btn" type="button" class="col-center-block btn btn-{%= btnclass %}" {%= disabled %} value="{%= btnvalue %}"/>
+                </td>
+            </tr>
+        </script>
+</body>
+</html>
